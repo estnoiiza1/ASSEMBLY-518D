@@ -9,7 +9,8 @@ const serviceAccount = require('./assembly-app-project-firebase-adminsdk-fbsvc-f
 const mongoUri = process.env.MONGO_URI;
 
 const app = express();
-const PORT = 3000;
+app.listen(PORT, '0.0.0.0', () => { // เพิ่ม '0.0.0.0' เพื่อให้ Render มองเห็น
+   console.log(`✅ Server (V15) running on port ${PORT}`);
 
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const client = new MongoClient(mongoUri, { serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true } });
@@ -187,4 +188,5 @@ async function startServer() {
   await connectToDatabase();
   app.listen(PORT, () => console.log(`✅ Server (V14) running on http://localhost:${PORT}`));
 }
+
 startServer();
