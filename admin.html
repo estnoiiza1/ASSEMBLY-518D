@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap');
+        body { font-family: 'Roboto', sans-serif; background-color: #0a0f1a; color: #eaeaea; margin: 0; padding: 20px; }
+        .dashboard-container { max-width: 1400px; margin: auto; background: rgba(10, 20, 40, 0.75); backdrop-filter: blur(10px); border-radius: 15px; border: 1px solid rgba(0, 180, 255, 0.3); padding: 25px; }
+        .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 180, 255, 0.3); padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .header-title { font-family: 'Orbitron', sans-serif; font-size: 24px; color: #00e5ff; font-weight: 700; }
+        .user-info button { font-size: 14px; background-color: #e74c3c; color: white; border: none; border-radius: 5px; padding: 6px 12px; cursor: pointer; }
+        
+        .filter-bar { width: 100%; display: flex; gap: 10px; align-items: center; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 5px; margin-bottom: 20px; flex-wrap: wrap; }
+        .filter-bar select, .filter-bar input { background-color: #0a0f1a; color: #eaeaea; border: 1px solid rgba(0,180,255,0.5); border-radius: 5px; padding: 5px; }
+        #btn-filter { background-color: #00e5ff; color: #0a0f1a; border: none; border-radius: 5px; padding: 6px 12px; cursor: pointer; font-weight: bold; }
+        
+        .btn-preset, .btn-nav { font-size: 12px; font-weight: bold; border-radius: 5px; padding: 5px 10px; cursor: pointer; }
+        .btn-preset { background-color: #34495e; color: #ecf0f1; border: 1px solid #566573; }
+        .btn-nav { background-color: #2c3e50; color: #00e5ff; border: 1px solid #00e5ff; }
+        .divider { border-left: 1px solid #555; height: 20px; margin: 0 5px; }
+
+        .main-content { display: grid; grid-template-columns: 3fr 1fr; gap: 20px; }
+        .main-column, .sidebar-column { display: flex; flex-direction: column; gap: 20px; }
+        
+        .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; }
+        .kpi-box, .sidebar-box, .chart-container, .hourly-table-container { background: rgba(0, 180, 255, 0.05); border: 1px solid rgba(0, 180, 255, 0.2); border-radius: 10px; padding: 20px; text-align: center; }
+        .kpi-box h2 { font-family: 'Orbitron', sans-serif; font-size: 48px; margin: 10px 0 0 0; }
+        #kpi-plan { color: #fff; } #kpi-ok { color: #2ecc71; } #kpi-variance { color: #fff; } #kpi-ng { color: #e74c3c; } #kpi-rework { color: #f39c12; }
+        
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; color: #bbb; margin-bottom: 5px; font-size: 14px; }
+        .form-group input, .form-group select { width: 100%; background-color: #0a0f1a; color: #eaeaea; border: 1px solid rgba(0,180,255,0.5); padding: 8px; box-sizing: border-box; border-radius: 5px; }
+        .btn-save { width: 100%; background-color: #2ecc71; color: #fff; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-add-user { width: 100%; background-color: #00e5ff; color: #0a0f1a; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+
+        .hourly-table { width: 100%; border-collapse: collapse; }
+        .hourly-table th, .hourly-table td { border-bottom: 1px solid rgba(0,180,255,0.3); padding: 8px; }
+        .hourly-table th { color: #00e5ff; font-family: 'Orbitron', sans-serif; }
+        
+        .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; height: 300px; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header-bar">
+            <div class="header-title">LEADER DASHBOARD</div>
+            <div class="user-info">
+                <strong id="user-display">...</strong>
+                <button id="btn-logout">ออกจากระบบ</button>
+            </div>
+        </div>
+        
+        <div class="filter-bar">
+            <label>Shift:</label>
+            <select id="shift-select">
+                <option value="day">☀️ Day Shift</option>
+                <option value="night">🌙 Night Shift</option>
+            </select>
+            <div style="width: 10px;"></div> 
+
+            <label>Model:</label>
+            <select id="dashboard-model-select">
+                <option value="">-- All Models --</option>
+                <option value="581D">Assy model 581D</option>
+                <option value="320D">REAR COM LAMP 320D</option>
+            </select>
+
+            <div class="divider"></div>
+            
+            <button class="btn-nav" id="prev-day">❮ วัน</button>
+            <button class="btn-preset" id="btn-today">วันนี้</button>
+            <button class="btn-nav" id="next-day">วัน ❯</button>
+
+            <div class="divider"></div>
+
+            <label>Date:</label>
+            <input type="date" id="start-date">
+            <label>-</label>
+            <input type="date" id="end-date">
+            <button id="btn-filter">Go</button>
+            
+            <div class="divider"></div>
+            <button class="btn-preset" id="btn-week">สัปดาห์นี้</button>
+            <button class="btn-preset" id="btn-month">เดือนนี้</button>
+        </div>
+
+        <div class="main-content">
+            <div class="main-column">
+                <div class="kpi-grid">
+                    <div class="kpi-box"><p>Plan</p><h2 id="kpi-plan">0</h2></div>
+                    <div class="kpi-box"><p>OK</p><h2 id="kpi-ok">0</h2></div>
+                    <div class="kpi-box"><p>Variance</p><h2 id="kpi-variance">0</h2></div>
+                    <div class="kpi-box"><p>NG</p><h2 id="kpi-ng">0</h2></div>
+                    <div class="kpi-box"><p>Rework</p><h2 id="kpi-rework">0</h2></div>
+                </div>
+                <div class="hourly-table-container">
+                    <h3>HOURLY PERFORMANCE</h3>
+                    <table class="hourly-table">
+                        <thead><tr><th>TIME</th><th>PLAN</th><th>ACTUAL</th><th>VARIANCE</th><th>OK</th><th>NG</th></tr></thead>
+                        <tbody id="hourly-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="sidebar-column">
+                <div class="sidebar-box">
+                    <h3>ADD NEW USER</h3>
+                    <form id="add-user-form">
+                        <div class="form-group"><label>ID:</label><input type="text" id="new-empid" required></div>
+                        <div class="form-group"><label>User:</label><input type="text" id="new-username" required></div>
+                        <div class="form-group"><label>Pass:</label><input type="text" id="new-password" required></div>
+                        <div class="form-group"><label>Name:</label><input type="text" id="new-fullname" required></div>
+                        <div class="form-group"><label>Role:</label>
+                            <select id="new-role">
+                                <option value="operator">Operator</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-add-user">Add</button>
+                    </form>
+                </div>
+
+                <div class="sidebar-box">
+                    <h3>SET PLAN</h3>
+                    <form id="plan-form">
+                        <div class="form-group"><label>Date:</label><input type="date" id="plan-date" required></div>
+                        <div class="form-group"><label>Shift:</label>
+                            <select id="plan-shift" required>
+                                <option value="day">Day</option>
+                                <option value="night">Night</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Model:</label>
+                            <select id="plan-model" required>
+                                <option value="581D">Assy model 581D</option>
+                                <option value="320D">REAR COM LAMP 320D</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Target:</label><input type="number" id="plan-target" required></div>
+                        <button type="submit" class="btn-save">Save</button>
+                    </form>
+                </div>
+                <div class="chart-container"><h3>OVERALL YIELD</h3><canvas id="kpiChart"></canvas></div>
+                <div class="chart-container"><h3>NG SUMMARY</h3><canvas id="defectChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let kpiChartInstance = null;
+        let defectChartInstance = null;
+        const kpiPlanEl = document.getElementById('kpi-plan');
+        const kpiOkEl = document.getElementById('kpi-ok');
+        const kpiVarianceEl = document.getElementById('kpi-variance');
+        const kpiNgEl = document.getElementById('kpi-ng');
+        const kpiReworkEl = document.getElementById('kpi-rework');
+        const hourlyTableBody = document.getElementById('hourly-table-body');
+        
+        // Inputs
+        const startDateInput = document.getElementById('start-date');
+        const endDateInput = document.getElementById('end-date');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const userJson = localStorage.getItem('assemblyUser');
+            if (!localStorage.getItem('assemblyToken') || !userJson) {
+                window.location.href = 'index.html';
+            } else {
+                const user = JSON.parse(userJson);
+                if (user.role !== 'admin') {
+                    window.location.href = 'index.html';
+                } else {
+                    document.getElementById('user-display').textContent = user.full_name;
+                    const todayStr = getFormattedDate(new Date());
+                    startDateInput.value = todayStr;
+                    endDateInput.value = todayStr;
+                    document.getElementById('plan-date').value = todayStr;
+                    fetchDashboardData(); 
+                }
+            }
+        });
+
+        // --- Filter Logic ---
+        function getFilterParams() {
+            return {
+                s: document.getElementById('start-date').value,
+                e: document.getElementById('end-date').value,
+                m: document.getElementById('dashboard-model-select').value,
+                shift: document.getElementById('shift-select').value
+            };
+        }
+
+        document.getElementById('btn-filter').addEventListener('click', () => {
+            const p = getFilterParams(); fetchDashboardData(p.s, p.e, p.m, p.shift);
+        });
+        document.getElementById('shift-select').addEventListener('change', () => {
+            const p = getFilterParams(); fetchDashboardData(p.s, p.e, p.m, p.shift);
+        });
+
+        // --- Date Nav Logic ---
+        function shiftDate(days) {
+            let s = new Date(startDateInput.value); let e = new Date(endDateInput.value);
+            s.setDate(s.getDate() + days); e.setDate(e.getDate() + days);
+            startDateInput.value = getFormattedDate(s); endDateInput.value = getFormattedDate(e);
+            const p = getFilterParams(); fetchDashboardData(p.s, p.e, p.m, p.shift);
+        }
+        function setPreset(type) {
+            const today = new Date(); const todayStr = getFormattedDate(today);
+            let startStr = todayStr;
+            if (type === 'week') {
+                const day = today.getDay(); const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+                const monday = new Date(today.setDate(diff)); startStr = getFormattedDate(monday);
+            } else if (type === 'month') {
+                startStr = getFormattedDate(new Date(today.getFullYear(), today.getMonth(), 1));
+            }
+            startDateInput.value = startStr; endDateInput.value = todayStr;
+            const p = getFilterParams(); fetchDashboardData(p.s, p.e, p.m, p.shift);
+        }
+
+        document.getElementById('prev-day').addEventListener('click', () => shiftDate(-1));
+        document.getElementById('next-day').addEventListener('click', () => shiftDate(1));
+        document.getElementById('btn-today').addEventListener('click', () => setPreset('today'));
+        document.getElementById('btn-week').addEventListener('click', () => setPreset('week'));
+        document.getElementById('btn-month').addEventListener('click', () => setPreset('month'));
+
+        // --- Fetch Data ---
+        async function fetchDashboardData(startDate = null, endDate = null, model = null, shift = 'day') {
+            let url = 'http://localhost:3000/get-admin-dashboard';
+            const params = new URLSearchParams();
+            if (startDate && endDate) { params.append('start', startDate); params.append('end', endDate); }
+            if (model) params.append('model', model);
+            params.append('shift', shift);
+            if (Array.from(params).length > 0) url += '?' + params.toString();
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                kpiPlanEl.textContent = data.kpi.plan;
+                kpiOkEl.textContent = data.kpi.ok;
+                kpiNgEl.textContent = data.kpi.ng;
+                kpiReworkEl.textContent = data.kpi.rework;
+                const v = data.kpi.ok - data.kpi.plan;
+                kpiVarianceEl.textContent = v;
+                kpiVarianceEl.style.color = v < 0 ? '#e74c3c' : (v > 0 ? '#2ecc71' : '#fff');
+                renderKpiChart(data.kpi);
+                renderDefectChart(data.defects);
+                renderHourlyTable(data.hourly, data.kpi.plan, shift); 
+            } catch (err) { console.error(err); }
+        }
+
+        // --- Save Plan ---
+        document.getElementById('plan-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const body = {
+                date_string: document.getElementById('plan-date').value,
+                model: document.getElementById('plan-model').value,
+                shift: document.getElementById('plan-shift').value,
+                target_quantity: document.getElementById('plan-target').value
+            };
+            await fetch('http://localhost:3000/set-plan', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+            alert("บันทึก Plan เรียบร้อย!");
+            document.getElementById('btn-filter').click(); 
+        });
+
+        // --- Add User ---
+        document.getElementById('add-user-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const body = {
+                employee_id: document.getElementById('new-empid').value,
+                username: document.getElementById('new-username').value,
+                password: document.getElementById('new-password').value,
+                full_name: document.getElementById('new-fullname').value,
+                role: document.getElementById('new-role').value
+            };
+            try {
+                const res = await fetch('http://localhost:3000/register', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+                const data = await res.json();
+                if (res.ok) { alert("✅ เพิ่มพนักงานสำเร็จ!"); document.getElementById('add-user-form').reset(); }
+                else { alert("❌ Error: " + data.error); }
+            } catch (err) { alert("❌ Connect Error"); }
+        });
+
+        // --- Renders ---
+        function renderKpiChart(data) {
+            const ctx = document.getElementById('kpiChart').getContext('2d');
+            if (kpiChartInstance) kpiChartInstance.destroy();
+            kpiChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: ['OK', 'NG', 'Rework'], datasets: [{ data: [data.ok, data.ng, data.rework], backgroundColor: ['#2ecc71', '#e74c3c', '#f39c12'], borderWidth: 0 }] }, options: { plugins: { legend: { display: false } } } });
+        }
+        function renderDefectChart(data) {
+            const ctx = document.getElementById('defectChart').getContext('2d');
+            if (defectChartInstance) defectChartInstance.destroy();
+            defectChartInstance = new Chart(ctx, { type: 'bar', data: { labels: data.map(d => d._id || 'Other'), datasets: [{ label: 'NG', data: data.map(d => d.count), backgroundColor: '#e74c3c' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#fff' } }, y: { ticks: { color: '#fff' } } } } });
+        }
+        function renderHourlyTable(hourlyData, dailyPlan, shift) {
+            hourlyTableBody.innerHTML = '';
+            let hours = [];
+            if (shift === 'day') { hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]; }
+            else { hours = [20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6, 7]; }
+            const hourlyPlan = dailyPlan > 0 ? Math.floor(dailyPlan / hours.length) : 0; 
+            hours.forEach(h => {
+                const d = hourlyData.find(x => x._id === h) || { ok: 0, ng: 0 };
+                const actual = d.ok + d.ng; 
+                const variance = actual - hourlyPlan;
+                const startH = h.toString().padStart(2, '0');
+                const endH = (h + 1 === 24 ? 0 : h + 1).toString().padStart(2, '0');
+                const row = `<tr><td>${startH}:00 - ${endH}:00</td><td>${hourlyPlan}</td><td>${actual}</td><td style="color:${variance < 0 ? '#e74c3c' : '#2ecc71'}">${variance}</td><td>${d.ok}</td><td>${d.ng || 0}</td></tr>`;
+                hourlyTableBody.innerHTML += row;
+            });
+        }
+
+        document.getElementById('btn-logout').addEventListener('click', () => { localStorage.clear(); window.location.href = 'index.html'; });
+        function getFormattedDate(date) { const yyyy = date.getFullYear(); const mm = (date.getMonth() + 1).toString().padStart(2, '0'); const dd = date.getDate().toString().padStart(2, '0'); return `${yyyy}-${mm}-${dd}`; }
+    </script>
+</body>
+</html>

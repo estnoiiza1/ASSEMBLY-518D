@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assembly Login</title>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400&display=swap');
+
+        /* --- 1. การตั้งค่าหน้าจอ --- */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #0a0f1a; /* พื้นหลังสีเทาดำ-น้ำเงินเข้ม */
+            color: #eaeaea;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden; /* ซ่อน scrollbar */
+            
+            /* (ลูกเล่น) พื้นหลัง Grid ไฮเทค */
+            background-image: 
+                linear-gradient(rgba(0, 180, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 180, 255, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            animation: pan-grid 60s linear infinite;
+        }
+
+        @keyframes pan-grid {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 40px; }
+        }
+
+        /* --- 2. กล่อง Login (Glassmorphism) --- */
+        .login-container {
+            position: relative;
+            z-index: 2; /* อยู่หน้า Canvas */
+            width: 400px;
+            padding: 40px;
+            
+            background: rgba(10, 20, 40, 0.85); /* สีพื้นหลังโปร่งแสง */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            
+            border-radius: 15px;
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            box-shadow: 0 0 40px rgba(0, 180, 255, 0.2);
+            text-align: center;
+        }
+
+        /* --- 3. โลโก้และหัวข้อ --- */
+        .logo {
+            font-family: 'Orbitron', sans-serif; /* ฟอนต์ไฮเทค */
+            font-size: 32px;
+            font-weight: 700;
+            color: #00e5ff; /* สีฟ้า Cyan */
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.7);
+        }
+
+        /* --- 4. ช่องกรอกข้อมูล (ไฮเทค) --- */
+        .input-group {
+            position: relative;
+            margin-bottom: 35px;
+            text-align: left;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px 0;
+            font-size: 16px;
+            color: #fff;
+            background: transparent; /* พื้นหลังโปร่งใส */
+            border: none;
+            border-bottom: 2px solid #555; /* เส้นล่างสีเทา */
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-group label {
+            position: absolute;
+            top: 10px;
+            left: 0;
+            font-size: 16px;
+            color: #888;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        /* เอฟเฟกต์เมื่อคลิกหรือพิมพ์ */
+        .input-group input:focus + label,
+        .input-group input:valid + label {
+            top: -15px;
+            left: 0;
+            font-size: 12px;
+            color: #00e5ff; /* เปลี่ยนเป็นสีฟ้า */
+        }
+
+        .input-group input:focus {
+            border-bottom-color: #00e5ff; /* เส้นล่างเปลี่ยนเป็นสีฟ้า */
+        }
+
+        /* --- 5. ปุ่ม Login --- */
+        .login-button {
+            width: 100%;
+            padding: 12px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #0a0f1a; /* สีตัวอักษรเข้ม */
+            background-color: #00e5ff; /* พื้นหลังสีฟ้า */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-button:hover {
+            background-color: #fff;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.7);
+        }
+
+        /* --- 6. สถานะ Error --- */
+        #status-message {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #ff4d4d; /* สีแดงสำหรับ Error */
+            height: 20px; /* จองที่ไว้ */
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="login-container">
+        
+        <div class="logo">
+            ASSEMBLY LOGIN
+        </div>
+        
+        <form id="login-form">
+            <div class="input-group">
+                <input type="text" id="username" name="username" required>
+                <label for="username">USERNAME </label>
+            </div>
+            
+            <div class="input-group">
+                <input type="password" id="password" name="password" required>
+                <label for="password">PASSWORD </label>
+            </div>
+            
+            <button type="submit" class="login-button" id="login-btn">
+                ACCESS (เข้าสู่ระบบ)
+            </button>
+            
+            <div id="status-message">
+                </div>
+        </form>
+    </div>
+
+    <script>
+        // 1. อ้างอิง Element ที่เราจะใช้
+        const loginForm = document.getElementById('login-form');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const statusMessage = document.getElementById('status-message');
+        const loginButton = document.getElementById('login-btn');
+
+        // 2. "ดักฟัง" (Event Listener) เมื่อมีการ "กดปุ่ม" (submit)
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); 
+            statusMessage.textContent = 'กำลังตรวจสอบ...';
+            statusMessage.style.color = '#00e5ff'; // สีฟ้า
+            loginButton.disabled = true;
+            loginButton.textContent = 'LOADING...';
+
+            try {
+                // 3. "ยิง" (Fetch) ข้อมูลไปที่ "สมอง" (Backend)
+                const response = await fetch('http://localhost:3000/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: usernameInput.value,
+                        password: passwordInput.value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'เกิดข้อผิดพลาด');
+                }
+
+                // 4. (สำคัญ!) "ถ้า Login สำเร็จ... (V3)"
+                console.log('Login สำเร็จ! กำลังบันทึก Token และเช็ค Role...');
+                
+                // 4.1: "บันทึก" บัตรผ่าน (Token) และ ข้อมูล User ไว้ใน "หน่วยความจำ"
+                localStorage.setItem('assemblyToken', data.token);
+                localStorage.setItem('assemblyUser', JSON.stringify(data.user)); 
+
+                // 4.2: แสดงสถานะ "สำเร็จ"
+                statusMessage.textContent = `ยินดีต้อนรับ, ${data.user.full_name}! (Role: ${data.user.role})...`;
+                statusMessage.style.color = '#2ecc71'; // สีเขียว
+                loginButton.textContent = 'SUCCESS!';
+
+                // 4.3: (ใหม่!) "เช็ค Role" (Check Role)
+                let targetPage = '';
+                if (data.user.role === 'admin') {
+                    // "ถ้า" เป็น 'admin' (เหมือน PP1) -> ไปหน้า admin.html
+                    targetPage = 'admin.html';
+                } else {
+                    // "ถ้า" เป็นอย่างอื่น (เช่น 'operator') -> ไปหน้า operator.html
+                    targetPage = 'operator.html';
+                }
+
+                // 4.4: "หน่วงเวลา" 1 วินาที แล้ว "เปลี่ยนหน้า" (ไปตาม Role)
+                setTimeout(() => {
+                    window.location.href = targetPage; // "ไปที่หน้า Admin" หรือ "หน้า Operator"
+                }, 1000); // 1000ms = 1 วินาที
+
+            } catch (error) {
+                // (ถ้า "ล้มเหลว")
+                console.error('Login ล้มเหลว:', error.message);
+                statusMessage.textContent = error.message;
+                statusMessage.style.color = '#ff4d4d'; // สีแดง
+                loginButton.disabled = false;
+                loginButton.textContent = 'ACCESS';
+            }
+        });
+    </script>
+
+</body>
+</html>

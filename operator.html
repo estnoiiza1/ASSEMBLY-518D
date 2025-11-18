@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assembly Workstation</title>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap');
+        
+        /* --- 1. การตั้งค่าหน้าจอ --- */
+        body {
+            font-family: 'Roboto', sans-serif; background-color: #0a0f1a; color: #eaeaea; margin: 0; padding: 20px;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+        }
+        .main-container {
+            width: 100%; max-width: 900px; background: rgba(10, 20, 40, 0.75);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px; border: 1px solid rgba(0, 180, 255, 0.3);
+            box-shadow: 0 0 40px rgba(0, 180, 255, 0.2); padding: 25px; box-sizing: border-box;
+        }
+
+        /* --- 3. ส่วนหัว (Context) (อัปเกรด!) --- */
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.3);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .user-info { font-size: 14px; color: #bbb; }
+        .user-info strong { font-family: 'Orbitron', sans-serif; color: #00e5ff; font-weight: 700; }
+        
+        /* (ใหม่!) ห่อ "ส่วนควบคุม" (Dropdown + Logout) */
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px; /* ช่องว่างระหว่าง Dropdown กับปุ่ม Logout */
+        }
+        
+        .model-selector select {
+            font-family: 'Roboto', sans-serif; font-size: 16px; background-color: #0a0f1a;
+            color: #00e5ff; border: 1px solid rgba(0, 180, 255, 0.5);
+            border-radius: 5px; padding: 8px 12px;
+        }
+
+        /* (ใหม่!) สไตล์ปุ่ม Logout */
+        #btn-logout {
+            font-family: 'Roboto', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            background-color: #e74c3c; /* สีแดง */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #btn-logout:hover {
+            background-color: #c0392b; /* สีแดงเข้ม */
+        }
+        
+        /* --- (CSS ส่วน .stats-grid, .btn, .modal-overlay "เหมือนเดิม" ทั้งหมด) --- */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .stat-box { background: rgba(0, 180, 255, 0.05); border: 1px solid rgba(0, 180, 255, 0.2); border-radius: 10px; padding: 15px; text-align: center; }
+        .stat-box p { margin: 0; font-size: 14px; color: #bbb; text-transform: uppercase; }
+        .stat-box h3 { font-family: 'Orbitron', sans-serif; font-size: 36px; color: #fff; margin: 5px 0 0 0; }
+        #total-count { color: #00e5ff; } #ok-count { color: #2ecc71; }
+        #ng-count { color: #e74c3c; } #rework-count { color: #f39c12; }
+        .action-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .btn { font-family: 'Orbitron', sans-serif; font-size: 24px; font-weight: 700; padding: 30px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; color: #fff; text-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        .btn:active { transform: scale(0.98); }
+        .btn-ok { background: linear-gradient(145deg, #27ae60, #2ecc71); border: 2px solid #2ecc71; }
+        .btn-ng { background: linear-gradient(145deg, #c0392b, #e74c3c); border: 2px solid #e74c3c; }
+        .btn-rework { background: linear-gradient(145deg, #d35400, #f39c12); border: 2px solid #f39c12; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 10; justify-content: center; align-items: center; }
+        .modal-content { background: rgba(20, 30, 50, 0.85); backdrop-filter: blur(10px); border: 1px solid rgba(0, 180, 255, 0.5); box-shadow: 0 0 50px rgba(0, 180, 255, 0.3); border-radius: 15px; padding: 30px; width: 400px; text-align: center; }
+        .modal-content h2 { font-family: 'Orbitron', sans-serif; color: #e74c3c; margin-top: 0; }
+        .defect-options button { display: block; width: 100%; padding: 15px; margin-bottom: 10px; font-size: 16px; background-color: rgba(0, 180, 255, 0.2); border: 1px solid rgba(0, 180, 255, 0.5); color: #fff; border-radius: 5px; cursor: pointer; transition: background-color 0.2s; }
+        .defect-options button:hover { background-color: rgba(0, 180, 255, 0.4); }
+        .defect-options button.btn-cancel { background-color: #555; border-color: #777; }
+        .defect-options button.btn-cancel:hover { background-color: #777; }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        
+        <div class="header-bar">
+            <div class="user-info">
+                ผู้ใช้งาน: <strong id="user-display">...กำลังโหลด...</strong>
+            </div>
+            
+            <div class="header-controls"> 
+                <div class="model-selector">
+                    <select id="model-select-dropdown">
+                        <option value="">-- เลือกรุ่นที่กำลังตรวจ --</option>
+                        <option value="581D">Assy model 581D</option>
+                        <option value="320D">REAR COM LAMP 320D</option>
+                    </select>
+                </div>
+                <button id="btn-logout">ออกจากระบบ</button>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box"><p>จำนวนตรวจ (Total)</p><h3 id="total-count">0</h3></div>
+            <div class="stat-box"><p>OK (งานดี)</p><h3 id="ok-count">0</h3></div>
+            <div class="stat-box"><p>NG (ของเสีย)</p><h3 id="ng-count">0</h3></div>
+            <div class="stat-box"><p>Rework (งานซ่อม)</p><h3 id="rework-count">0</h3></div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-ok" id="btn-ok">✅ OK</button>
+            <button class="btn btn-ng" id="btn-ng">❌ NG</button>
+            <button class="btn btn-rework" id="btn-rework">♻️ REWORK</button>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="defect-modal">
+        <div class="modal-content">
+            <h2>NG: ระบุสาเหตุของเสีย</h2>
+            <div class="defect-options">
+                <button data-defect="Scratch">รอยขีดข่วน (Scratch)</button>
+                <button data-defect="Short Shot">ฉีดไม่เต็ม (Short Shot)</button>
+                <button data-defect="Color Issue">สีเพี้ยน (Color Issue)</button>
+                <button data-defect="Other">อื่นๆ (Other)</button>
+                <button class="btn-cancel" id="btn-cancel-modal">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- 0. สร้างตัวแปร "ส่วนกลาง" (Global) ---
+        let currentUser = null;
+        let currentToken = null; 
+        
+        // --- 1. อ้างอิง Element ที่เราจะใช้ ---
+        const userDisplayEl = document.getElementById('user-display');
+        const modelSelectEl = document.getElementById('model-select-dropdown');
+        const totalCountEl = document.getElementById('total-count');
+        const okCountEl = document.getElementById('ok-count');
+        const ngCountEl = document.getElementById('ng-count');
+        const reworkCountEl = document.getElementById('rework-count');
+        const okBtn = document.getElementById('btn-ok');
+        const ngBtn = document.getElementById('btn-ng');
+        const reworkBtn = document.getElementById('btn-rework');
+        const modal = document.getElementById('defect-modal');
+        const cancelModalBtn = document.getElementById('btn-cancel-modal');
+        const defectOptions = document.querySelector('.defect-options');
+        
+        // (ใหม่!) อ้างอิงปุ่ม Logout
+        const logoutBtn = document.getElementById('btn-logout');
+
+        
+        // --- 2. (สำคัญ!) "ยาม" (Security Check) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            currentToken = localStorage.getItem('assemblyToken');
+            const userJson = localStorage.getItem('assemblyUser');
+            if (!currentToken || !userJson) {
+                console.log("❌ ไม่พบบัตรผ่าน (Token)! กำลังเตะกลับไปหน้า Login...");
+                window.location.href = 'index.html'; 
+            } else {
+                console.log("✅ พบ 'บัตรผ่าน'! ยินดีต้อนรับสู่หน้า Operator");
+                currentUser = JSON.parse(userJson);
+                userDisplayEl.textContent = currentUser.full_name;
+                fetchStats(); // "ไปดึงยอด" (Fetch Stats) "จริงๆ"
+            }
+        });
+
+        // --- 3. "ฟังก์ชัน" สำหรับ "ดึงยอด" (Fetch Stats) ---
+        async function fetchStats() {
+            if (!currentUser) return;
+            console.log(`...กำลังดึงยอดสถิติสำหรับ User ID: ${currentUser._id}...`);
+            try {
+                const response = await fetch(`http://localhost:3000/get-stats/${currentUser._id}`, {
+                    method: 'GET'
+                });
+                if (!response.ok) throw new Error('ไม่สามารถดึงยอดสถิติได้');
+                const stats = await response.json(); 
+                okCountEl.textContent = stats.ok;
+                ngCountEl.textContent = stats.ng;
+                reworkCountEl.textContent = stats.rework;
+                totalCountEl.textContent = stats.total;
+            } catch (error) {
+                console.error("❌ Error ตอนดึงยอด:", error.message);
+                alert("เกิดข้อผิดพลาดในการดึงยอดสถิติ! (สมองปิดอยู่หรือเปล่า?)");
+            }
+        }
+
+        // --- 4. "ฟังก์ชัน" สำหรับ "บันทึก" (Log QC) ---
+        async function logQcEntry(status, defect = null) {
+            const selectedModel = modelSelectEl.value;
+            if (!selectedModel) {
+                alert("กรุณาเลือก 'รุ่นที่กำลังตรวจ' ก่อนครับ!");
+                return;
+            }
+            const dataToSend = {
+                model: selectedModel,
+                status: status,
+                defect: defect,
+                userId: currentUser._id,
+                username: currentUser.username
+            };
+            
+            console.log("...กำลังส่งข้อมูล QC:", dataToSend);
+            try {
+                const response = await fetch('http://localhost:3000/log-qc', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dataToSend)
+                });
+                if (!response.ok) throw new Error('ไม่สามารถบันทึกข้อมูลได้');
+                console.log("✅ บันทึกสำเร็จ!");
+                fetchStats(); // "ดึงยอด" (Fetch Stats) "ใหม่"
+            } catch (error) {
+                console.error("❌ Error ตอนบันทึก QC:", error.message);
+                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล! (สมองปิดอยู่หรือเปล่า?)");
+            }
+        }
+
+        // --- 5. การทำงานของปุ่ม (เหมือนเดิม) ---
+        okBtn.addEventListener('click', () => { logQcEntry('OK'); });
+        reworkBtn.addEventListener('click', () => { logQcEntry('REWORK'); });
+        ngBtn.addEventListener('click', () => { modal.style.display = 'flex'; });
+        cancelModalBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+        defectOptions.addEventListener('click', (e) => {
+            if (e.target.dataset.defect) {
+                const defectType = e.target.dataset.defect;
+                logQcEntry('NG', defectType);
+                modal.style.display = 'none';
+            }
+        });
+        
+        // --- 6. (ใหม่!) การทำงานของปุ่ม "Logout" ---
+        // (นี่คือ "สายไฟ" ที่คุณ "ลืม" บันทึกในครั้งที่แล้วครับ!)
+        logoutBtn.addEventListener('click', () => {
+            console.log("...กำลังออกจากระบบ...");
+            
+            // 6.1: "ลบ" บัตรผ่าน (Token) และ ข้อมูล User ออกจาก "หน่วยความจำ"
+            localStorage.removeItem('assemblyToken');
+            localStorage.removeItem('assemblyUser');
+
+            // 6.2: "เตะ" กลับไปหน้า Login
+            window.location.href = 'index.html';
+        });
+    </script>
+
+</body>
+</html>
